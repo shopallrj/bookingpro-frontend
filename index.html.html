@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookingPro</title>
+  <meta name="theme-color" content="#003580">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0A0A0F;
+      --surface: rgba(0,53,128,0.12);
+      --border: rgba(0,113,194,0.2);
+      --blue: #003580;
+      --blue-light: #0071C2;
+      --blue-dim: rgba(0,53,128,0.15);
+      --blue-border: rgba(0,113,194,0.3);
+      --text: #F1F1F1;
+      --muted: #556;
+      --green: #4ADE80;
+      --red: #EF4444;
+      --yellow: #FFB700;
+      --gold: #FFB700;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+    button, input, select, textarea { font-family: inherit; }
+    input::placeholder, textarea::placeholder { color: #334; }
+    select option { background: #0a0a1a; }
+    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #223; border-radius: 3px; }
+
+    .topbar { position:sticky; top:0; z-index:50; background:rgba(10,10,15,0.96); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; }
+    .logo { font-family:'Space Grotesk',sans-serif; font-weight:800; font-size:17px; color:var(--blue-light); display:flex; align-items:center; gap:8px; }
+    .logo-badge { background:var(--blue-light); color:#fff; font-size:10px; padding:2px 7px; border-radius:99px; font-weight:800; }
+    .tabs { display:flex; gap:4px; overflow-x:auto; }
+    .tabs::-webkit-scrollbar { display:none; }
+    .tab-btn { background:transparent; border:none; border-radius:8px; padding:6px 12px; font-weight:700; font-size:12px; cursor:pointer; color:var(--muted); transition:all .2s; white-space:nowrap; }
+    .tab-btn.active { background:var(--blue-dim); color:var(--blue-light); }
+    .main { max-width:1000px; margin:0 auto; padding:24px 16px 80px; }
+
+    /* Cards de hotel */
+    .hotel-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+    .hotel-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; transition:border-color .2s,transform .15s; animation:rise .4s cubic-bezier(.22,1,.36,1) both; }
+    .hotel-card:hover { border-color:var(--blue-light); transform:translateY(-2px); }
+    .hotel-img { width:100%; height:180px; object-fit:cover; background:linear-gradient(135deg,rgba(0,53,128,.2),rgba(0,113,194,.1)); }
+    .hotel-img-placeholder { width:100%; height:180px; background:linear-gradient(135deg,rgba(0,53,128,.15),rgba(0,113,194,.08)); display:flex; align-items:center; justify-content:center; font-size:48px; }
+    .hotel-body { padding:16px; display:flex; flex-direction:column; gap:10px; flex:1; }
+    .hotel-name { font-weight:800; font-size:15px; line-height:1.4; }
+    .hotel-location { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:4px; }
+    .hotel-rating { display:flex; align-items:center; gap:6px; }
+    .rating-badge { background:var(--blue-light); color:#fff; font-weight:800; font-size:13px; padding:4px 9px; border-radius:6px; }
+    .rating-text { font-size:12px; color:var(--muted); }
+    .hotel-price { display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; }
+    .price-label { font-size:11px; color:var(--muted); }
+    .price-value { font-family:'Space Grotesk',monospace; font-size:22px; font-weight:800; color:var(--blue-light); }
+    .price-night { font-size:12px; color:var(--muted); }
+    .hotel-actions { display:flex; gap:8px; margin-top:auto; flex-wrap:wrap; }
+
+    .btn-primary { flex:1; background:var(--blue-light); color:#fff; border:none; border-radius:10px; padding:10px; text-align:center; font-weight:800; font-size:13px; cursor:pointer; text-decoration:none; display:block; transition:opacity .15s; }
+    .btn-primary:hover { opacity:.88; }
+    .btn-copy { background:rgba(255,255,255,.07); color:#888; border:none; border-radius:10px; padding:9px 11px; font-weight:700; font-size:12px; cursor:pointer; transition:all .2s; }
+    .btn-copy.copied { background:rgba(74,222,128,.12); color:var(--green); }
+    .btn-share-wpp { background:rgba(37,211,102,.1); color:#25D366; border:1px solid rgba(37,211,102,.2); border-radius:10px; padding:9px 11px; font-weight:700; font-size:12px; cursor:pointer; }
+    .btn-share-tg  { background:rgba(0,113,194,.1); color:var(--blue-light); border:1px solid rgba(0,113,194,.2); border-radius:10px; padding:9px 11px; font-weight:700; font-size:12px; cursor:pointer; }
+
+    .tag { font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; white-space:nowrap; display:inline-flex; align-items:center; gap:3px; }
+    .tag-blue   { background:var(--blue-dim); color:var(--blue-light); }
+    .tag-green  { background:rgba(74,222,128,.12); color:var(--green); }
+    .tag-yellow { background:rgba(255,183,0,.12); color:var(--yellow); }
+    .tag-red    { background:rgba(239,68,68,.12); color:var(--red); }
+
+    .searchbar { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:20px; display:flex; flex-direction:column; gap:12px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; }
+    .field { display:flex; flex-direction:column; gap:6px; flex:1; min-width:130px; }
+    .field label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; }
+    .field input, .field select { background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:10px; padding:10px 13px; color:var(--text); font-size:13px; outline:none; width:100%; transition:border-color .2s; }
+    .field input:focus, .field select:focus { border-color:var(--blue-light); }
+    .btn-search { background:var(--blue-light); color:#fff; border:none; border-radius:12px; padding:13px; font-weight:800; font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:opacity .15s; }
+    .btn-search:disabled { background:#223; color:#445; cursor:not-allowed; }
+
+    .stats-bar { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin-bottom:20px; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; text-align:center; }
+    .stat-val   { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:800; color:var(--blue-light); }
+    .stat-label { font-size:11px; color:var(--muted); margin-top:3px; }
+
+    .config-block { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:18px; }
+    .config-title { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .config-title span { font-weight:800; font-size:15px; }
+    .config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media(max-width:480px){ .config-grid{grid-template-columns:1fr;} .row{flex-direction:column;} .hotel-grid{grid-template-columns:1fr;} }
+    .config-info { background:var(--blue-dim); border:1px solid var(--blue-border); border-radius:10px; padding:10px 13px; font-size:12px; color:#6BA3D6; margin-bottom:14px; line-height:1.6; }
+
+    .alert { border-radius:12px; padding:13px 16px; margin-bottom:18px; font-size:13px; line-height:1.6; font-weight:500; }
+    .alert-warn    { background:var(--blue-dim); border:1px solid var(--blue-border); color:#6BA3D6; }
+    .alert-error   { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:#FCA5A5; }
+    .alert-success { background:rgba(74,222,128,.08); border:1px solid rgba(74,222,128,.2); color:#86EFAC; }
+
+    .empty { text-align:center; padding:64px 20px; }
+    .empty-icon  { font-size:52px; margin-bottom:14px; }
+    .empty-title { font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:800; color:var(--blue-light); margin-bottom:8px; }
+    .empty-sub   { color:var(--muted); font-size:14px; line-height:1.7; max-width:360px; margin:0 auto 24px; }
+    .quick-tags  { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+    .quick-tag   { background:var(--blue-dim); color:var(--blue-light); border:1px solid var(--blue-border); border-radius:99px; padding:6px 15px; font-weight:700; font-size:13px; cursor:pointer; transition:all .2s; }
+    .quick-tag:hover { background:rgba(0,113,194,.25); }
+
+    .skeleton { background:rgba(0,53,128,.08); border:1px solid rgba(0,113,194,.1); border-radius:16px; padding:18px; }
+    .skel-line { border-radius:6px; animation:shimmer 1.4s infinite; background:linear-gradient(90deg,rgba(0,113,194,.06) 25%,rgba(0,113,194,.12) 50%,rgba(0,113,194,.06) 75%); background-size:200% 100%; margin-bottom:10px; }
+
+    /* Agendador */
+    .dot { width:10px; height:10px; border-radius:50%; background:#223; flex-shrink:0; transition:all .3s; }
+    .dot.active { background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+
+    /* Histórico */
+    .history-item { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px; display:flex; align-items:center; gap:12px; }
+
+    @keyframes rise    { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    @keyframes spin    { to{transform:rotate(360deg)} }
+    @keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .spin { display:inline-block; animation:spin .8s linear infinite; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🏨 BookingPro<span class="logo-badge">BETA</span></div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('search')"    id="tab-search">🔍 Hotéis</button>
+    <button class="tab-btn"        onclick="showTab('scheduler')" id="tab-scheduler">🗓️ Agendador</button>
+    <button class="tab-btn"        onclick="showTab('history')"   id="tab-history">📋 Histórico</button>
+    <button class="tab-btn"        onclick="showTab('config')"    id="tab-config">⚙️ Config</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ══ BUSCA ══ -->
+<div id="page-search">
+  <div id="no-config-banner" class="alert alert-warn" style="display:none">
+    ⚙️ Configure suas credenciais do Booking.com na aba <strong>Config</strong>.
+    <button onclick="showTab('config')" style="margin-left:8px;background:var(--blue-light);color:#fff;border:none;border-radius:8px;padding:4px 12px;font-weight:800;font-size:12px;cursor:pointer">Ir para Config →</button>
+  </div>
+
+  <div class="searchbar">
+    <div class="row">
+      <div class="field" style="flex:2;min-width:200px">
+        <label>Cidade ou destino</label>
+        <input type="text" id="search-city" placeholder="Ex: São Paulo, Rio de Janeiro, Lisboa..." onkeydown="if(event.key==='Enter')doSearch()">
+      </div>
+      <div class="field">
+        <label>Check-in</label>
+        <input type="date" id="search-checkin">
+      </div>
+      <div class="field">
+        <label>Check-out</label>
+        <input type="date" id="search-checkout">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Adultos</label>
+        <select id="search-adults">
+          <option value="1">1 adulto</option>
+          <option value="2" selected>2 adultos</option>
+          <option value="3">3 adultos</option>
+          <option value="4">4 adultos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Quartos</label>
+        <select id="search-rooms">
+          <option value="1" selected>1 quarto</option>
+          <option value="2">2 quartos</option>
+          <option value="3">3 quartos</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Preço máx./noite (R$)</label>
+        <input type="number" id="search-max-price" placeholder="Sem limite" min="0">
+      </div>
+      <div class="field">
+        <label>Avaliação mínima</label>
+        <select id="search-min-rating">
+          <option value="0">Qualquer</option>
+          <option value="7">7.0+</option>
+          <option value="8">8.0+ ⭐</option>
+          <option value="9">9.0+ 🏆</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-search" id="btn-search" onclick="doSearch()">🔍 Buscar Hotéis</button>
+  </div>
+
+  <div id="search-error" class="alert alert-error" style="display:none"></div>
+
+  <div id="stats-bar" class="stats-bar" style="display:none">
+    <div class="stat-card"><div class="stat-val" id="stat-total">0</div><div class="stat-label">hotéis</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-avg-price">R$0</div><div class="stat-label">preço médio/noite</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-avg-rating">0</div><div class="stat-label">avaliação média</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-best">R$0</div><div class="stat-label">melhor preço</div></div>
+  </div>
+
+  <div id="hotel-grid" class="hotel-grid"></div>
+
+  <div id="empty-state" class="empty">
+    <div class="empty-icon">🏨</div>
+    <div class="empty-title">Encontre os melhores hotéis</div>
+    <p class="empty-sub">Busque hotéis no Brasil e no mundo com os melhores preços do Booking.com e compartilhe com seu canal.</p>
+    <div class="quick-tags">
+      <span class="quick-tag" onclick="quickSearch('São Paulo')">🌆 São Paulo</span>
+      <span class="quick-tag" onclick="quickSearch('Rio de Janeiro')">🏖️ Rio de Janeiro</span>
+      <span class="quick-tag" onclick="quickSearch('Florianópolis')">🌊 Florianópolis</span>
+      <span class="quick-tag" onclick="quickSearch('Lisboa')">🇵🇹 Lisboa</span>
+      <span class="quick-tag" onclick="quickSearch('Paris')">🗼 Paris</span>
+      <span class="quick-tag" onclick="quickSearch('Cancún')">🌴 Cancún</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AGENDADOR ══ -->
+<div id="page-scheduler" style="display:none">
+  <div style="animation:rise .4s ease both">
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-size:22px;color:var(--blue-light);margin-bottom:6px">🗓️ Agendador de Posts</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Posta hotéis automaticamente no canal Telegram a cada intervalo configurado.</p>
+
+    <!-- Master -->
+    <div onclick="toggleMaster()" style="cursor:pointer;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(74,222,128,.08);border:2px solid rgba(74,222,128,.3);transition:all .3s" id="master-wrap">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:14px;height:14px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex-shrink:0" id="master-dot"></div>
+        <div>
+          <div style="font-weight:800;font-size:15px;color:var(--green)" id="master-label">✅ Enviando normalmente</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px" id="master-sub">Clique para silenciar</div>
+        </div>
+      </div>
+      <div style="background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);border-radius:10px;padding:8px 16px;font-weight:800;font-size:13px;color:var(--green)" id="master-btn-label">🔔 Ativo</div>
+    </div>
+
+    <div class="config-block">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="dot" id="sched-dot"></div>
+          <span id="sched-status-text" style="font-weight:700;font-size:14px;color:var(--muted)">Agendador inativo</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="btn-sched-start" onclick="startScheduler()" style="background:var(--blue-light);color:#fff;border:none;border-radius:10px;padding:8px 18px;font-weight:800;font-size:13px;cursor:pointer">▶ Ativar</button>
+          <button id="btn-sched-stop"  onclick="stopScheduler()"  style="display:none;background:rgba(239,68,68,.12);color:var(--red);border:none;border-radius:10px;padding:8px 18px;font-weight:800;font-size:13px;cursor:pointer">⏹ Parar</button>
+        </div>
+      </div>
+
+      <div class="config-grid" style="margin-bottom:14px">
+        <div class="field">
+          <label>Intervalo entre posts (minutos)</label>
+          <input type="number" id="sched-interval" value="60" min="10" max="1440" style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:13px;outline:none;width:100%">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+            <button onclick="document.getElementById('sched-interval').value=30"  class="tag tag-blue" style="cursor:pointer;border:none">30min</button>
+            <button onclick="document.getElementById('sched-interval').value=60"  class="tag tag-blue" style="cursor:pointer;border:none">1h</button>
+            <button onclick="document.getElementById('sched-interval').value=120" class="tag tag-blue" style="cursor:pointer;border:none">2h</button>
+            <button onclick="document.getElementById('sched-interval').value=180" class="tag tag-blue" style="cursor:pointer;border:none">3h</button>
+            <button onclick="document.getElementById('sched-interval').value=300" class="tag tag-blue" style="cursor:pointer;border:none">5h</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Cidade padrão</label>
+          <input type="text" id="sched-city" placeholder="Ex: São Paulo, Rio de Janeiro..." style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:13px;outline:none;width:100%">
+        </div>
+        <div class="field">
+          <label>Avaliação mínima</label>
+          <select id="sched-min-rating" style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:13px;outline:none">
+            <option value="0">Qualquer</option>
+            <option value="7">7.0+</option>
+            <option value="8" selected>8.0+</option>
+            <option value="9">9.0+</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Preço máx./noite (R$)</label>
+          <input type="number" id="sched-max-price" placeholder="Sem limite" style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:13px;outline:none;width:100%">
+        </div>
+      </div>
+
+      <!-- Countdown e preview -->
+      <div id="sched-next-box" style="display:none;background:var(--blue-dim);border:1px solid var(--blue-border);border-radius:12px;padding:14px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--blue-light);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">⏰ Próximo post em</div>
+        <div id="sched-countdown" style="font-family:'Space Grotesk',monospace;font-size:28px;font-weight:800;color:#fff;margin-bottom:10px">--:--</div>
+        <div id="sched-preview" style="display:none;background:rgba(0,0,0,.2);border-radius:10px;padding:12px">
+          <div style="font-size:10px;font-weight:700;color:var(--blue-light);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">👁️ Próximo hotel</div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <img id="sched-preview-img" src="" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:8px;flex-shrink:0" onerror="this.style.display='none'">
+            <div style="flex:1;min-width:0">
+              <p id="sched-preview-name" style="font-weight:800;font-size:13px;line-height:1.4;margin-bottom:4px"></p>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <span id="sched-preview-rating" style="background:var(--blue-light);color:#fff;font-weight:800;font-size:12px;padding:2px 7px;border-radius:5px"></span>
+                <span id="sched-preview-price" style="font-family:'Space Grotesk',monospace;font-size:14px;font-weight:800;color:var(--blue-light)"></span>
+              </div>
+            </div>
+            <button onclick="skipNextHotel()" style="background:rgba(255,255,255,.08);border:none;border-radius:8px;padding:6px 10px;color:var(--muted);font-size:12px;cursor:pointer;flex-shrink:0">⏭️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Histórico agendador -->
+    <div id="sched-history-box" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📋 Últimos posts automáticos</div>
+      <div id="sched-history" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HISTÓRICO ══ -->
+<div id="page-history" style="display:none">
+  <div style="animation:rise .4s ease both">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <div>
+        <h2 style="font-family:'Space Grotesk',sans-serif;font-size:22px;color:var(--blue-light);margin-bottom:4px">📋 Histórico de Posts</h2>
+        <p style="color:var(--muted);font-size:13px">Todos os hotéis postados no Telegram.</p>
+      </div>
+      <button onclick="clearHistory()" style="background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">🗑️ Limpar</button>
+    </div>
+    <div id="history-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="history-empty" style="text-align:center;padding:40px;color:var(--muted);font-size:13px">Nenhum post registrado ainda.</div>
+  </div>
+</div>
+
+<!-- ══ CONFIG ══ -->
+<div id="page-config" style="display:none">
+  <div style="animation:rise .4s ease both">
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-size:22px;color:var(--blue-light);margin-bottom:6px">⚙️ Configurações</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:24px">Suas credenciais ficam salvas apenas neste dispositivo.</p>
+
+    <div class="config-block">
+      <div class="config-title"><span style="font-size:22px">🏨</span><span>Booking.com</span><span class="tag tag-green" id="booking-status" style="display:none">✓ Configurado</span></div>
+      <div class="config-info">ℹ️ Acesse <strong>developers.booking.com</strong> → Partner Centre → API Keys para obter suas credenciais. Você precisa estar aprovado como Managed Affiliate Partner via Awin.</div>
+      <div class="config-grid">
+        <div class="field"><label>API Key</label><input type="password" id="booking-api-key" placeholder="Sua API Key do Booking"></div>
+        <div class="field"><label>Affiliate ID (X-Affiliate-Id)</label><input type="text" id="booking-affiliate-id" placeholder="Ex: 123456"></div>
+        <div class="field"><label>URL do Backend</label><input type="text" id="backend-url" placeholder="https://bookingpro-backend.onrender.com"></div>
+        <div class="field"><label>País do buscador</label>
+          <select id="booking-country">
+            <option value="br" selected>🇧🇷 Brasil (BRL)</option>
+            <option value="us">🇺🇸 EUA (USD)</option>
+            <option value="pt">🇵🇹 Portugal (EUR)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="config-block">
+      <div class="config-title"><span style="font-size:22px">✈️</span><span>Telegram</span><span class="tag tag-green" id="telegram-status" style="display:none">✓ Configurado</span></div>
+      <div class="config-grid">
+        <div class="field"><label>Bot Token</label><input type="password" id="telegram-token" placeholder="Ex: 8702261088:AAG..."></div>
+        <div class="field"><label>Chat ID do Canal</label><input type="text" id="telegram-chat-id" placeholder="Ex: -1004358515335"></div>
+      </div>
+    </div>
+
+    <button onclick="saveConfig()" style="background:var(--blue-light);color:#fff;border:none;border-radius:12px;padding:13px 28px;font-weight:800;font-size:14px;cursor:pointer">💾 Salvar</button>
+    <div id="save-feedback" class="alert alert-success" style="display:none;margin-top:14px">✅ Configurações salvas!</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const HISTORY_KEY = 'bookingpro_history';
+let config = JSON.parse(localStorage.getItem('bookingpro_config') || '{}');
+let allHotels = [];
+let masterActive = true;
+let schedulerTimer = null, schedCountdownInt = null, schedActive = false, schedNextAt = null;
+let schedPool = [], schedIndex = 0, schedPostedIds = new Set();
+
+// Datas padrão (hoje + 2 dias)
+const today = new Date(), tomorrow = new Date(today);
+tomorrow.setDate(today.getDate() + 1);
+const dayAfter = new Date(today);
+dayAfter.setDate(today.getDate() + 2);
+const fmt = d => d.toISOString().split('T')[0];
+document.getElementById('search-checkin').value  = fmt(tomorrow);
+document.getElementById('search-checkout').value = fmt(dayAfter);
+
+// ── TABS ──────────────────────────────────────────────────────────
+function showTab(tab) {
+  ['search','scheduler','history','config'].forEach(t => {
+    document.getElementById('page-'+t).style.display = t===tab ? '' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+  if (tab === 'search')  checkConfigBanner();
+  if (tab === 'config')  loadConfigFields();
+  if (tab === 'history') renderHistory();
+}
+
+// ── CONFIG ────────────────────────────────────────────────────────
+function hasConfig() { return !!(config.booking?.apiKey && config.booking?.affiliateId); }
+function checkConfigBanner() { document.getElementById('no-config-banner').style.display = hasConfig() ? 'none' : ''; }
+
+function loadConfigFields() {
+  document.getElementById('booking-api-key').value     = config.booking?.apiKey      || '';
+  document.getElementById('booking-affiliate-id').value = config.booking?.affiliateId || '';
+  document.getElementById('backend-url').value          = config.backendUrl            || '';
+  document.getElementById('booking-country').value      = config.booking?.country      || 'br';
+  document.getElementById('telegram-token').value       = config.telegram?.token       || '';
+  document.getElementById('telegram-chat-id').value     = config.telegram?.channelId   || '';
+  updateConfigStatus();
+}
+
+function saveConfig() {
+  config = {
+    booking: {
+      apiKey:      document.getElementById('booking-api-key').value.trim(),
+      affiliateId: document.getElementById('booking-affiliate-id').value.trim(),
+      country:     document.getElementById('booking-country').value,
+    },
+    backendUrl: document.getElementById('backend-url').value.trim(),
+    telegram: {
+      token:     document.getElementById('telegram-token').value.trim(),
+      channelId: document.getElementById('telegram-chat-id').value.trim(),
+    },
+  };
+  localStorage.setItem('bookingpro_config', JSON.stringify(config));
+  updateConfigStatus();
+  const fb = document.getElementById('save-feedback');
+  fb.style.display = ''; setTimeout(() => fb.style.display='none', 2500);
+}
+
+function updateConfigStatus() {
+  document.getElementById('booking-status').style.display  = hasConfig() ? '' : 'none';
+  const ts = document.getElementById('telegram-status');
+  if (ts) ts.style.display = (config.telegram?.token && config.telegram?.channelId) ? '' : 'none';
+}
+
+// ── BUSCA ─────────────────────────────────────────────────────────
+function quickSearch(city) {
+  document.getElementById('search-city').value = city;
+  doSearch();
+}
+
+async function doSearch() {
+  const city      = document.getElementById('search-city').value.trim();
+  const checkin   = document.getElementById('search-checkin').value;
+  const checkout  = document.getElementById('search-checkout').value;
+  const adults    = document.getElementById('search-adults').value;
+  const rooms     = document.getElementById('search-rooms').value;
+  const maxPrice  = parseFloat(document.getElementById('search-max-price').value) || 0;
+  const minRating = parseFloat(document.getElementById('search-min-rating').value) || 0;
+  const errEl     = document.getElementById('search-error');
+  const btn       = document.getElementById('btn-search');
+  const grid      = document.getElementById('hotel-grid');
+  const empty     = document.getElementById('empty-state');
+
+  if (!hasConfig()) { showTab('config'); return; }
+  if (!city)        { errEl.textContent = '⚠️ Digite uma cidade para buscar.'; errEl.style.display = ''; return; }
+  if (!checkin || !checkout) { errEl.textContent = '⚠️ Selecione as datas de check-in e check-out.'; errEl.style.display = ''; return; }
+
+  errEl.style.display = 'none';
+  btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span> Buscando...';
+  grid.innerHTML = skeletons(6); empty.style.display = 'none';
+  document.getElementById('stats-bar').style.display = 'none';
+
+  try {
+    const backendUrl = (config.backendUrl || '').replace(/\/$/, '');
+    const res = await fetch(`${backendUrl}/booking/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apiKey: config.booking?.apiKey, affiliateId: config.booking?.affiliateId,
+        city, checkin, checkout, adults: parseInt(adults), rooms: parseInt(rooms),
+        country: config.booking?.country || 'br',
+        maxPrice, minRating,
+      }),
+    });
+    if (!res.ok) { const d = await res.json().catch(()=>({})); throw new Error(d.error || `Erro ${res.status}`); }
+    const data = await res.json();
+    allHotels = data.hotels || [];
+
+    if (allHotels.length === 0) {
+      grid.innerHTML = '';
+      empty.innerHTML = '<div class="empty-icon">🔎</div><div class="empty-title">Nenhum hotel encontrado</div><p class="empty-sub">Tente ajustar as datas, a cidade ou os filtros.</p>';
+      empty.style.display = ''; return;
+    }
+
+    renderHotels(allHotels, checkin, checkout);
+    updateStats(allHotels);
+  } catch(err) {
+    grid.innerHTML = ''; empty.style.display = 'none';
+    errEl.textContent = '⚠️ ' + err.message; errEl.style.display = '';
+  } finally {
+    btn.disabled = false; btn.innerHTML = '🔍 Buscar Hotéis';
+  }
+}
+
+function updateStats(hotels) {
+  const prices  = hotels.map(h => h.price).filter(p => p > 0);
+  const ratings = hotels.map(h => h.rating).filter(r => r > 0);
+  const avgPrice  = prices.length  ? Math.round(prices.reduce((a,b)=>a+b,0)/prices.length)   : 0;
+  const avgRating = ratings.length ? (ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1) : 0;
+  const bestPrice = prices.length  ? Math.min(...prices) : 0;
+  document.getElementById('stat-total').textContent      = hotels.length;
+  document.getElementById('stat-avg-price').textContent  = formatPrice(avgPrice);
+  document.getElementById('stat-avg-rating').textContent = avgRating;
+  document.getElementById('stat-best').textContent       = formatPrice(bestPrice);
+  document.getElementById('stats-bar').style.display     = 'grid';
+}
+
+// ── CARD HTML ─────────────────────────────────────────────────────
+function renderHotels(hotels, checkin, checkout) {
+  const grid = document.getElementById('hotel-grid');
+  grid.innerHTML = hotels.map((h, i) => hotelCardHTML(h, i, checkin, checkout)).join('');
+  document.getElementById('empty-state').style.display = 'none';
+}
+
+function hotelCardHTML(h, i, checkin, checkout) {
+  const rating      = h.rating ? h.rating.toFixed(1) : '';
+  const ratingLabel = h.rating >= 9 ? 'Excepcional' : h.rating >= 8 ? 'Ótimo' : h.rating >= 7 ? 'Bom' : 'Agradável';
+  const priceStr    = formatPrice(h.price);
+  const link        = h.affiliateLink || h.link || '#';
+  const imgHtml     = h.image
+    ? `<img class="hotel-img" src="${h.image}" alt="${h.name}" onerror="this.className='hotel-img-placeholder';this.innerHTML='🏨';this.removeAttribute('src')">`
+    : `<div class="hotel-img-placeholder">🏨</div>`;
+
+  const wppMsg = encodeURIComponent(buildWppMessage(h, checkin, checkout));
+
+  return `
+  <div class="hotel-card" style="animation-delay:${i*0.06}s">
+    ${imgHtml}
+    <div class="hotel-body">
+      <p class="hotel-name">${h.name}</p>
+      <p class="hotel-location">📍 ${h.city || h.location || ''}</p>
+      ${rating ? `<div class="hotel-rating"><span class="rating-badge">${rating}</span><span class="rating-text">${ratingLabel} · ${h.reviews || ''} avaliações</span></div>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${h.stars ? `<span class="tag tag-yellow">${'⭐'.repeat(Math.min(h.stars,5))}</span>` : ''}
+        ${h.freeCancellation ? `<span class="tag tag-green">✓ Cancelamento grátis</span>` : ''}
+        ${h.breakfast ? `<span class="tag tag-blue">🍳 Café incluso</span>` : ''}
+      </div>
+      <div class="hotel-price">
+        <div>
+          <div class="price-label">A partir de</div>
+          <div style="display:flex;align-items:baseline;gap:6px">
+            <span class="price-value">${priceStr}</span>
+            <span class="price-night">/noite</span>
+          </div>
+        </div>
+      </div>
+      <div class="hotel-actions">
+        <a class="btn-primary" href="${link}" target="_blank" rel="noopener">Ver oferta →</a>
+        <button class="btn-copy" onclick="copyText(this,'${link}')" title="Copiar link">🔗</button>
+        <button class="btn-copy" onclick="copyHotelMsg(this,${i},'${encodeURIComponent(JSON.stringify({checkin,checkout}))}')" title="Copiar mensagem">📋</button>
+        <a class="btn-share-wpp" href="https://api.whatsapp.com/send?text=${wppMsg}" target="_blank" title="WhatsApp">📲</a>
+        <button class="btn-share-tg" onclick="postHotelTelegram(${i},'${encodeURIComponent(JSON.stringify({checkin,checkout}))}')" title="Telegram">✈️</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── MENSAGENS ─────────────────────────────────────────────────────
+function buildWppMessage(h, checkin, checkout) {
+  const nights = checkin && checkout ? Math.round((new Date(checkout)-new Date(checkin))/86400000) : 1;
+  let msg = `🏨 *OFERTA DE HOTEL*\n\n`;
+  msg += `🏩 ${h.name}\n`;
+  msg += `📍 ${h.city || h.location || ''}\n`;
+  if (h.rating) msg += `⭐ Avaliação: ${h.rating.toFixed(1)}/10\n`;
+  msg += `\n💵 A partir de ${formatPrice(h.price)}/noite`;
+  if (nights > 1) msg += ` (${nights} noites = ${formatPrice(h.price * nights)})`;
+  if (h.freeCancellation) msg += `\n✅ Cancelamento gratuito`;
+  if (h.breakfast) msg += `\n🍳 Café da manhã incluído`;
+  msg += `\n\n🔗 ${h.affiliateLink || h.link || ''}`;
+  return msg;
+}
+
+function buildTelegramMessage(h, checkin, checkout) {
+  const nights = checkin && checkout ? Math.round((new Date(checkout)-new Date(checkin))/86400000) : 1;
+  const esc = t => String(t).replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
+  let msg = `🏨 *OFERTA DE HOTEL*\n\n`;
+  msg += `🏩 *${esc(h.name)}*\n`;
+  msg += `📍 ${esc(h.city || h.location || '')}\n`;
+  if (h.rating) msg += `⭐ Avaliação: *${h.rating.toFixed(1)}/10*\n`;
+  msg += `\n💵 A partir de *${esc(formatPrice(h.price))}/noite*`;
+  if (nights > 1) msg += ` \\(${nights} noites \\= ${esc(formatPrice(h.price * nights))}\\)`;
+  if (h.freeCancellation) msg += `\n✅ Cancelamento gratuito`;
+  if (h.breakfast) msg += `\n🍳 Café da manhã incluído`;
+  msg += `\n\n🔗 [Ver oferta](${h.affiliateLink || h.link || ''})`;
+  msg += `\n\n_Reserve agora e garanta o melhor preço\\!_ 🌍`;
+  return msg;
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '🔗'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function copyHotelMsg(btn, idx, datesEnc) {
+  const h     = allHotels[idx]; if (!h) return;
+  const dates = JSON.parse(decodeURIComponent(datesEnc));
+  const text  = buildWppMessage(h, dates.checkin, dates.checkout);
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+async function postHotelTelegram(idx, datesEnc) {
+  const h = allHotels[idx]; if (!h) return;
+  const { token, channelId } = config.telegram || {};
+  if (!token || !channelId) { showTab('config'); return; }
+  const dates = JSON.parse(decodeURIComponent(datesEnc));
+  const msg   = buildTelegramMessage(h, dates.checkin, dates.checkout);
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: channelId, photo: h.image, caption: msg, parse_mode: 'MarkdownV2' }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.description);
+    addToHistory(h, false); alert('✅ Postado no canal! 📸');
+  } catch(e) {
+    // Fallback sem foto
+    try {
+      const res2 = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id: channelId, text: msg, parse_mode: 'MarkdownV2', disable_web_page_preview: false }),
+      });
+      const data2 = await res2.json();
+      if (data2.ok) { addToHistory(h, false); alert('✅ Postado no canal! 📝'); }
+      else throw new Error(data2.description);
+    } catch(e2) { alert('❌ Erro: ' + e2.message); }
+  }
+}
+
+// ── HISTÓRICO ────────────────────────────────────────────────────
+function getHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'); } catch(e) { return []; } }
+function addToHistory(hotel, auto = false) {
+  let h = getHistory();
+  h.unshift({ ...hotel, ts: Date.now(), _auto: auto });
+  if (h.length > 200) h = h.slice(0,200);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+}
+function clearHistory() { if(confirm('Limpar todo o histórico?')) { localStorage.removeItem(HISTORY_KEY); renderHistory(); } }
+function renderHistory() {
+  const list  = document.getElementById('history-list');
+  const empty = document.getElementById('history-empty');
+  const h = getHistory();
+  if (h.length === 0) { list.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display = 'none';
+  list.innerHTML = h.map(o => {
+    const date = new Date(o.ts).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return `<div class="history-item">
+      ${o.image ? `<img src="${o.image}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0" onerror="this.style.display='none'">` : '<div style="width:52px;height:52px;border-radius:8px;background:var(--blue-dim);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🏨</div>'}
+      <div style="flex:1;min-width:0">
+        <p style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name}</p>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:3px">
+          ${o.rating ? `<span style="background:var(--blue-light);color:#fff;font-weight:800;font-size:11px;padding:2px 6px;border-radius:4px">${o.rating.toFixed(1)}</span>` : ''}
+          <span style="font-size:12px;font-weight:800;color:var(--blue-light)">${formatPrice(o.price)}/noite</span>
+          <span style="font-size:11px;color:var(--muted)">${date}</span>
+          ${o._auto ? '<span class="tag tag-blue" style="font-size:10px">🗓️ Auto</span>' : '<span class="tag tag-green" style="font-size:10px">✋ Manual</span>'}
+        </div>
+      </div>
+      ${o.affiliateLink||o.link ? `<a href="${o.affiliateLink||o.link}" target="_blank" class="btn-primary" style="flex:0;white-space:nowrap;text-decoration:none;padding:7px 12px;font-size:12px">Ver →</a>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── MASTER ────────────────────────────────────────────────────────
+function toggleMaster() {
+  masterActive = !masterActive;
+  const wrap = document.getElementById('master-wrap');
+  const dot  = document.getElementById('master-dot');
+  const lbl  = document.getElementById('master-label');
+  const sub  = document.getElementById('master-sub');
+  const btn  = document.getElementById('master-btn-label');
+  if (masterActive) {
+    wrap.style.background='rgba(74,222,128,.08)'; wrap.style.borderColor='rgba(74,222,128,.3)';
+    dot.style.background='var(--green)'; dot.style.boxShadow='0 0 8px var(--green)';
+    lbl.style.color='var(--green)'; lbl.textContent='✅ Enviando normalmente';
+    sub.textContent='Clique para silenciar';
+    btn.style.background='rgba(74,222,128,.15)'; btn.style.color='var(--green)'; btn.textContent='🔔 Ativo';
+  } else {
+    wrap.style.background='rgba(239,68,68,.08)'; wrap.style.borderColor='rgba(239,68,68,.3)';
+    dot.style.background='var(--red)'; dot.style.boxShadow='0 0 8px var(--red)';
+    lbl.style.color='var(--red)'; lbl.textContent='🔕 Silenciado';
+    sub.textContent='Clique para retomar';
+    btn.style.background='rgba(239,68,68,.12)'; btn.style.color='var(--red)'; btn.textContent='🔕 Silenciado';
+  }
+}
+
+// ── AGENDADOR ────────────────────────────────────────────────────
+function setSchedulerUI(active) {
+  schedActive = active;
+  const dot  = document.getElementById('sched-dot');
+  const text = document.getElementById('sched-status-text');
+  const btnStart = document.getElementById('btn-sched-start');
+  const btnStop  = document.getElementById('btn-sched-stop');
+  const nextBox  = document.getElementById('sched-next-box');
+  if (dot)   { dot.style.background = active ? 'var(--green)' : '#223'; dot.style.boxShadow = active ? '0 0 6px var(--green)' : 'none'; }
+  if (text)  { text.textContent = active ? '🟢 Agendador ativo' : 'Agendador inativo'; text.style.color = active ? 'var(--green)' : 'var(--muted)'; }
+  if (btnStart) btnStart.style.display = active ? 'none' : '';
+  if (btnStop)  btnStop.style.display  = active ? '' : 'none';
+  if (nextBox)  nextBox.style.display  = active ? '' : 'none';
+  if (!active && schedCountdownInt) { clearInterval(schedCountdownInt); schedCountdownInt = null; }
+}
+
+async function startScheduler() {
+  if (!hasConfig()) { showTab('config'); return; }
+  if (!config.telegram?.token || !config.telegram?.channelId) { alert('Configure o Telegram na aba Config!'); return; }
+  setSchedulerUI(true);
+  schedPool = []; schedIndex = 0; schedPostedIds = new Set();
+  await runSchedPost();
+  const intervalMs = (parseInt(document.getElementById('sched-interval').value) || 60) * 60000;
+  schedNextAt = Date.now() + intervalMs;
+  startCountdown();
+  schedulerTimer = setInterval(async () => {
+    await runSchedPost();
+    schedNextAt = Date.now() + (parseInt(document.getElementById('sched-interval').value)||60) * 60000;
+  }, intervalMs);
+}
+
+function stopScheduler() {
+  clearInterval(schedulerTimer); clearInterval(schedCountdownInt);
+  schedulerTimer = null; schedCountdownInt = null; schedActive = false; schedNextAt = null;
+  setSchedulerUI(false);
+}
+
+function startCountdown() {
+  if (schedCountdownInt) clearInterval(schedCountdownInt);
+  schedCountdownInt = setInterval(() => {
+    const el = document.getElementById('sched-countdown');
+    if (!el || !schedNextAt) return;
+    const diff = schedNextAt - Date.now();
+    if (diff <= 0) { el.textContent = '00:00'; return; }
+    const m = Math.floor(diff/60000), s = Math.floor((diff%60000)/1000);
+    el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }, 1000);
+}
+
+async function runSchedPost() {
+  if (!masterActive) return;
+  const city      = document.getElementById('sched-city')?.value?.trim() || 'São Paulo';
+  const minRating = parseFloat(document.getElementById('sched-min-rating')?.value) || 0;
+  const maxPrice  = parseFloat(document.getElementById('sched-max-price')?.value) || 0;
+  const checkin   = fmt(tomorrow);
+  const checkout  = fmt(dayAfter);
+
+  if (schedPool.length === 0 || schedIndex >= schedPool.length) {
+    try {
+      const backendUrl = (config.backendUrl || '').replace(/\/$/, '');
+      const res = await fetch(`${backendUrl}/booking/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: config.booking?.apiKey, affiliateId: config.booking?.affiliateId,
+          city, checkin, checkout, adults: 2, rooms: 1,
+          country: config.booking?.country || 'br', maxPrice, minRating,
+        }),
+      });
+      const data = await res.json();
+      let hotels = (data.hotels || []).filter(h => !schedPostedIds.has(h.id));
+      if (hotels.length === 0) { schedPostedIds = new Set(); hotels = data.hotels || []; }
+      schedPool  = hotels.sort(() => Math.random() - 0.5);
+      schedIndex = 0;
+    } catch(e) { console.warn('[Scheduler]', e.message); return; }
+  }
+
+  if (schedPool.length === 0) return;
+  const h = schedPool[schedIndex]; schedIndex++; schedPostedIds.add(h.id);
+
+  // Posta no Telegram
+  const { token, channelId } = config.telegram;
+  const msg = buildTelegramMessage(h, checkin, checkout);
+  try {
+    const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: channelId, photo: h.image, caption: msg, parse_mode: 'MarkdownV2' }),
+    });
+    const tgData = await tgRes.json();
+    if (tgData.ok) { addToHistory(h, true); renderSchedHistory(); }
+    else throw new Error(tgData.description);
+  } catch(e) {
+    try {
+      const r2 = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id: channelId, text: msg, parse_mode: 'MarkdownV2' }),
+      });
+      const d2 = await r2.json();
+      if (d2.ok) { addToHistory(h, true); renderSchedHistory(); }
+    } catch(e2) { console.warn('[Scheduler Telegram]', e2.message); }
+  }
+
+  // Preview do próximo
+  if (schedPool[schedIndex]) showSchedPreview(schedPool[schedIndex]);
+}
+
+function showSchedPreview(h) {
+  const preview = document.getElementById('sched-preview');
+  if (!preview || !h) { if(preview) preview.style.display='none'; return; }
+  document.getElementById('sched-preview-img').src     = h.image || '';
+  document.getElementById('sched-preview-name').textContent   = h.name;
+  document.getElementById('sched-preview-rating').textContent = h.rating ? h.rating.toFixed(1) : '';
+  document.getElementById('sched-preview-price').textContent  = formatPrice(h.price) + '/noite';
+  preview.style.display = '';
+}
+
+function skipNextHotel() {
+  if (schedPool.length > schedIndex+1) { schedIndex++; showSchedPreview(schedPool[schedIndex]); }
+}
+
+function renderSchedHistory() {
+  const box = document.getElementById('sched-history-box');
+  const el  = document.getElementById('sched-history');
+  if (!el) return;
+  const h = getHistory().filter(o => o._auto).slice(0,8);
+  box.style.display = h.length > 0 ? '' : 'none';
+  el.innerHTML = h.map(o => {
+    const date = new Date(o.ts).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    return `<div style="background:var(--surface);border:1px solid rgba(74,222,128,.2);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px">
+      ${o.image ? `<img src="${o.image}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0" onerror="this.style.display='none'">` : ''}
+      <div style="flex:1;min-width:0">
+        <p style="font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${o.name}</p>
+        <div style="display:flex;gap:6px;margin-top:3px;align-items:center">
+          <span style="font-size:12px;font-weight:800;color:var(--blue-light)">${formatPrice(o.price)}/noite</span>
+          <span style="font-size:11px;color:var(--muted)">${date}</span>
+          <span style="font-size:11px;color:var(--green)">✓ Enviado</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function formatPrice(p) {
+  if (!p && p !== 0) return '';
+  return 'R$ ' + Number(p).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function skeletons(n) {
+  return Array.from({length:n},(_,i)=>`<div class="skeleton" style="animation-delay:${i*.06}s"><div style="height:160px;background:rgba(0,113,194,.06);border-radius:10px;margin-bottom:12px"></div>${[70,100,50,60].map((w,j)=>`<div class="skel-line" style="height:${j===1?18:13}px;width:${w}%"></div>`).join('')}</div>`).join('');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+updateConfigStatus();
+checkConfigBanner();
+</script>
+</body>
+</html>
